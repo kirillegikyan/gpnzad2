@@ -3,7 +3,6 @@ import subprocess
 import logging
 import os
 import shutil
-
 from pathlib import Path
 
 def get_apachectl_command():
@@ -42,6 +41,23 @@ mod_actions = {
     ],
 }
 
+# 🔍 Проверка модуля
+def check_module(mod_pattern):
+    try:
+        result = subprocess.run([APACHECTL, '-M'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        return any(mod_pattern in line for line in result.stdout.splitlines())
+    except Exception as e:
+        logging.error(f"Ошибка при проверке модуля {mod_pattern}: {e}")
+        return None
+
+def execute_command(cmd):
+    try:
+        subprocess.run(cmd, check=True)
+        logging.info(f"✅ Выполнена команда: {' '.join(cmd)}")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"❌ Ошибка при выполнении команды: {' '.join(cmd)} — {e}")
+
+# 🔧 Проверка неиспользуемых auth*/ldap модулей
 def disable_unused_auth_modules():
     try:
         result = subprocess.run([APACHECTL, '-M'], stdout=subprocess.PIPE, text=True)
@@ -57,6 +73,7 @@ def disable_unused_auth_modules():
     except Exception as e:
         logging.error(f"Ошибка при отключении auth/ldap модулей: {e}")
 
+# 🔧 Проверка, от какого пользователя работает Apache
 def check_apache_user():
     try:
         result = subprocess.run(['ps', 'axo', 'user,comm'], stdout=subprocess.PIPE, text=True)
@@ -79,6 +96,7 @@ def check_apache_user():
         print("❌ Ошибка при проверке пользователя Apache")
         logging.error(f"Ошибка при проверке пользователя Apache: {e}")
 
+# 🔧 Проверка безопасной конфигурации
 def check_system_hardening():
     try:
         with open("/etc/passwd") as f:
@@ -148,33 +166,120 @@ def check_system_hardening():
     except Exception as e:
         logging.error(f"Ошибка в 2.8: {e}")
 
-def check_module(mod_pattern):
-    try:
-        result = subprocess.run([APACHECTL, '-M'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        return any(mod_pattern in line for line in result.stdout.splitlines())
-    except Exception as e:
-        logging.error(f"Ошибка при проверке модуля {mod_pattern}: {e}")
-        return None
+# 🔧 Проверка ScoreBoardFile (п.2.9)
+def check_scoreboard_file():
+    print("\n🔍 Проверка ScoreBoardFile (п.2.9)")
+    result = subprocess.run("grep -r 'ScoreBoardFile' /etc/apache2/*.conf", shell=True, stdout=subprocess.PIPE, text=True)
+    if result.stdout:
+        lines = result.stdout.splitlines()
+        for line in lines:
+            path = line.split(":")[0]
+            stat_u = subprocess.run(f"stat -c %U {path}", shell=True, stdout=subprocess.PIPE, text=True).stdout.strip()
+            stat_g = subprocess.run(f"stat -c %G {path}", shell=True, stdout=subprocess.PIPE, text=True).stdout.strip()
+            if stat_u == "root" and stat_g == "root":
+                print(f"✅ ScoreBoardFile: {path} принадлежит root:root")
+            else:
+                print(f"❌ ScoreBoardFile: {path} — устанавливаем владельца root:root")
+                subprocess.run(f"chown root:root {path}", shell=True)
+    else:
+        print("ℹ️ ScoreBoardFile не найден в конфигурации")
 
-def execute_command(cmd):
-    try:
-        subprocess.run(cmd, check=True)
-        logging.info(f"✅ Выполнена команда: {' '.join(cmd)}")
-    except subprocess.CalledProcessError as e:
-        logging.error(f"❌ Ошибка при выполнении команды: {' '.join(cmd)} — {e}")
+# 🔧 Проверка прав на запись для group
+def check_group_write_perm():
+    print("\n🔍 Проверка прав на запись для group (п.2.10)")
+    result = subprocess.run("find /etc/apache2 -perm /g=w -ls | grep -v 'lrwxrwxrwx'", shell=True, stdout=subprocess.PIPE, text=True)
+    if result.stdout:
+        print("❌ Обнаружены права group на запись — исправляем...")
+        subprocess.run("chmod -R g-w /etc/apache2", shell=True)
+    else:
+        print("✅ Права на запись для group ограничены")
 
+# 🔧 Проверка ограничений на доступ к веб-контенту (п.3.2)
+def check_access_control():
+    print("\n🔍 Проверка ограничений на доступ к веб-контенту (п.3.2)")
+
+    # Читаем конфигурацию
+    conf_path = "/etc/apache2/apache2.conf"
+    
+    with open(conf_path, "r") as f:
+        config = f.read()
+
+    # Проверяем, существует ли блок <Location /portal>
+    if "<Location /portal>" not in config:
+        print("❌ Блок <Location /portal> не найден. Добавляем его...")
+        with open(conf_path, "a") as f:
+            f.write("\n<Location /portal>\n    Require valid-user\n</Location>\n")
+        print("✅ Добавлен блок <Location /portal> с директивой Require valid-user.")
+    else:
+        # Проверяем, если в блоке <Location /portal> уже есть требуемая директива
+        if "Require valid-user" not in config.split("<Location /portal>")[1].split("</Location>")[0]:
+            # Если нет, добавляем директиву
+            with open(conf_path, "a") as f:
+                f.write("\n<Location /portal>\n    Require valid-user\n</Location>\n")
+            print("✅ Добавлено ограничение Require valid-user в <Location /portal>")
+        else:
+            print("ℹ️ Ограничение Require valid-user уже присутствует в конфигурации.")
+def remove_allow_override_list():
+    print("\n🔍 Проверка и удаление директивы AllowOverrideList (п.3.3)")
+    
+    # Проверяем, есть ли директива AllowOverrideList в конфигурационных файлах
+    result = subprocess.run("grep -r 'AllowOverrideList' /etc/apache2/*.conf", shell=True, stdout=subprocess.PIPE, text=True)
+    
+    if result.stdout:
+        print("❌ Найдена директива AllowOverrideList — удаляем её...")
+        
+        # Получаем все файлы конфигурации
+        config_files = result.stdout.splitlines()
+        
+        for file in config_files:
+            file_path = file.split(":")[0]
+            
+            # Открываем файл и удаляем строки с AllowOverrideList
+            with open(file_path, 'r') as f:
+                lines = f.readlines()
+            
+            with open(file_path, 'w') as f:
+                for line in lines:
+                    if "AllowOverrideList" not in line:
+                        f.write(line)
+            
+            print(f"✅ Директива AllowOverrideList удалена из {file_path}")
+        
+        # Перезагружаем Apache, чтобы изменения вступили в силу
+       
+    else:
+        print("✅ AllowOverrideList отсутствует в конфигурации.")
+
+# 🛠 Функция для подавления предупреждения AH00558
 def suppress_ah00558_warning():
     try:
+        # Путь к конфигурационному файлу для установки ServerName
         conf_path = "/etc/apache2/conf-available/servername.conf"
-        with open(conf_path, "w") as f:
-            f.write("ServerName localhost\n")
-        subprocess.run(["a2enconf", "servername"], check=True)
-        subprocess.run(["systemctl", "reload", "apache2"], check=True)
-        print("✅ Установлен ServerName localhost — предупреждение AH00558 устранено")
-        logging.info("ServerName localhost установлен")
+        
+        # Проверяем, существует ли уже конфигурация ServerName
+        if not os.path.exists(conf_path):
+            # Если не существует, создаем конфигурацию
+            with open(conf_path, "w") as f:
+                f.write("ServerName localhost\n")
+            subprocess.run(["a2enconf", "servername"], check=True)
+            subprocess.run(["systemctl", "reload", "apache2"], check=True)
+            print("✅ Установлен ServerName localhost — предупреждение AH00558 устранено")
+            logging.info("ServerName localhost установлен")
+        else:
+            print("✅ ServerName уже установлен — предупреждение AH00558 устранено")
     except Exception as e:
         print("⚠️ Не удалось установить ServerName localhost")
         logging.error(f"Ошибка при установке ServerName: {e}")
+
+# 🛠 Функция для перезагрузки Apache с использованием полного пути systemctl
+def restart_apache():
+    systemctl_path = shutil.which("systemctl")  # Находит полный путь к systemctl
+    if systemctl_path:
+        subprocess.run([systemctl_path, "restart", "apache2"], check=True)
+        print("ℹ️ Apache перезагружен для применения изменений")
+    else:
+        print("❌ systemctl не найден в системе")
+# 🔧 Проверка директивы AllowOverrideList (п.3.3)
 
 def main():
     print("🔧 Настройка Apache модулей...")
@@ -211,11 +316,19 @@ def main():
     print("\n🔐 Проверка безопасной конфигурации (п.2.2 – 2.8)")
     check_system_hardening()
 
+    # **Добавление проверок 3.1-3.3**
+    check_scoreboard_file()
+    check_group_write_perm()
+    check_access_control()  # Проверка доступа к директориям ОС
+    remove_allow_override_list()
+
     suppress_ah00558_warning()
 
     logging.info("=== Настройка завершена ===")
     print(f"\n✅ Настройка завершена. Лог: {LOG_FILE}")
-    print("ℹ️ Не забудь перезапустить Apache: sudo systemctl restart apache2")
+    print("ℹ️ Не забудь перезагрузить Apache вручную, если скрипт не сделал это автоматически.")
+    restart_apache()  # Перезагружаем Apache только в конце
+
 
 if __name__ == "__main__":
     main()
