@@ -1,0 +1,536 @@
+
+[
+  {
+    "id": "APC_0001",
+    "sub_id": "1.1",
+    "description": "В конфигурации www-data включены только необходимые для проекта модули авторизации и аутентификации (Модули должны быть отражены в УТП)",
+    "commands": [
+      "apachectl -M | grep 'auth'",
+      "apachectl -M | grep 'ldap'"
+    ],
+    "fix": "Отключить неиспользуемые модули:\na2dismod <имя_модуля>"
+  },
+  {
+    "id": "APC_0002",
+    "sub_id": "1.2",
+    "description": "Модуль log_config ВКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep 'log_config'"
+    ],
+    "fix": "Включен по умолчанию"
+  },
+  {
+    "id": "APC_0003",
+    "sub_id": "1.3",
+    "description": "Модуль WebDAV ОТКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep 'dav_[[:print:]]+module'"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить"
+  },
+  {
+    "id": "APC_0004",
+    "sub_id": "1.4",
+    "description": "Модуль mod_status ОТКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep 'status_module'"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить\na2dismod status"
+  },
+  {
+    "id": "APC_0005",
+    "sub_id": "1.5",
+    "description": "Модуль autoindex_module ОТКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep 'autoindex_module'"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить\na2dismod autoindex -f"
+  },
+  {
+    "id": "APC_0006",
+    "sub_id": "1.6",
+    "description": "Модули proxy ОТКЛЮЧЕНЫ (Данный пункт неприменим, если веб сервер используется как прокси сервер) Автор : Модуль используется в конфигурации",
+    "commands": [
+      "apachectl -M | grep proxy_"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить"
+  },
+  {
+    "id": "APC_0007",
+    "sub_id": "1.7",
+    "description": "Модуль userdir ОТКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep userdir_"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить"
+  },
+  {
+    "id": "APC_0008",
+    "sub_id": "1.8",
+    "description": "Модуль mod_info ОТКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep 'info_module'"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить"
+  },
+  {
+    "id": "APC_0009",
+    "sub_id": "1.9",
+    "description": "Модули mod_auth_digest ОТКЛЮЧЕНЫ",
+    "commands": [
+      "apachectl -M | grep auth_digest_module"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить"
+  },
+  {
+    "id": "APC_0010",
+    "sub_id": "1.10",
+    "description": "Модули mod_auth_basic ОТКЛЮЧЕНЫ",
+    "commands": [
+      "apachectl -M | grep auth_basic_module"
+    ],
+    "fix": "Отключен по умолчанию, при наличии отключить\na2dismod auth_basic -f"
+  },
+  {
+    "id": "APC_0011",
+    "sub_id": "1.11",
+    "description": "Модуль mod_ssl ВКЛЮЧЕН",
+    "commands": [
+      "apachectl -M | grep ssl_module"
+    ],
+    "fix": "Устанавливаем и настраиваем ssl при разворачивании apache2:\na2enmod ssl\na2ensite default-ssl.conf"
+  },
+  {
+    "id": "APC_0012",
+    "sub_id": "2.1",
+    "description": "Apache запущен с выделенной (сервисной) учетной записи без прав суперпользователя",
+    "commands": [
+      "grep -r '^User' /etc/apache2/*.conf",
+      "grep -r www-data /etc/passwd",
+      "ps aux | grep  apache2"
+    ],
+    "fix": "По умолчанию"
+  },
+  {
+    "id": "APC_0014",
+    "sub_id": "2.2",
+    "description": "В /etc/passwd для [сервисная учетная запись] задана оболочка пользователя /sbin/nologin",
+    "commands": [
+      "grep -r www-data /etc/passwd"
+    ],
+    "fix": "По умолчанию"
+  },
+  {
+    "id": "APC_0013",
+    "sub_id": "2.3",
+    "description": "УЗ от имени которой запущен веб сервер заблокирована для интерактивного входа",
+    "commands": [
+      "passwd -S www-data"
+    ],
+    "fix": "По умолчанию"
+  },
+  {
+    "id": "APC_0015",
+    "sub_id": "2.4",
+    "description": "Владельцем каталогов Apache является root",
+    "commands": [
+      "find /etc/apache2 \\! -user root",
+      "find /usr/share/apache2 \\! -user root"
+    ],
+    "fix": "При несоответствии устанавливаем владельца\nchown root:root /etc/apache2 -R\nchown root:root /usr/share/apache2 -R"
+  },
+  {
+    "id": "APC1C_0001",
+    "sub_id": "2.5",
+    "description": "Для каталогов и файлов Apache настроены минимальные привилегии (Права на запись в директория и файлах www-data для other ограничены)",
+    "commands": [
+      "ls -l  /etc/apache2/"
+    ],
+    "fix": "Проверяем уровень доступа, при превышении полномочий выравниваем:\nchmod 755 /etc/apache2 -R"
+  },
+  {
+    "id": "APC_0017",
+    "sub_id": "2.6",
+    "description": "Директория с основными дампами принадлежит пользователю root и группе пользователя сервисной УЗ",
+    "commands": [
+      "stat -c %U /var/log/apache2",
+      "stat -c %G /var/log/apache2",
+      "stat -c %a /var/log/apache2"
+    ],
+    "fix": "При несоответствии устанавливаем владельца\nchown root:www-data /var/log/apache2 -R\nchmod 660 /var/log/apache2 -R"
+  },
+  {
+    "id": "APC_0018",
+    "sub_id": "2.8",
+    "description": "PidFile принадлежит пользователю root и группе root PidFile файл должен быть недоступен для записи для отличных от root и www-data пользователей",
+    "commands": [
+      "stat -c %U /run/apache2/apache2.pid",
+      "stat -c %G /run/apache2/apache2.pid",
+      "stat -c %a /run/apache2/apache2.pid"
+    ],
+    "fix": "При несоответствии устанавливаем владельца\nchown root:root /run/apache2/apache2.pid"
+  },
+  {
+    "id": "APC_0019",
+    "sub_id": "3.1",
+    "description": "Доступ к директориям ОС должен быть запрещен в конфигурации apache",
+    "commands": [
+      "grep -R -A 4 \"<Directory />\" /etc/apache2/*.conf| grep -v \"#\" | grep \"Require all denied\"",
+      "grep -R -A 4 \"<Directory />\" /etc/apache2/conf-available/*.conf| grep -v \"#\" | grep \"Require all denied\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nВ каждой публикации не 1С должен быть установлен параметр"
+  },
+  {
+    "id": "APC_0020",
+    "sub_id": "3.2",
+    "description": "Настроены ограничения на доступ к веб контенту в конфигурации apache. (Доступ к контенту должен быть настроен в соответствии с ТП (НФТ) проекта)",
+    "commands": [
+      "grep -r \"<Location /*\" /etc/apache2/*.conf| grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nВ каждой публикации 1С должен быть установлен параметр"
+  },
+  {
+    "id": "APC_0021",
+    "sub_id": "3.3",
+    "description": "Отсутствует/Отключена директива AllowOverrideList",
+    "commands": [
+      "grep -r \"AllowOverrideList\" /etc/apache2/*.conf"
+    ],
+    "fix": "Удалить диррективу при наличии в файле /etc/apache2/apache2.conf"
+  },
+  {
+    "id": "APC_0022",
+    "sub_id": "4.1",
+    "description": "Директива Options настроена Значение выставлено в None или Multiviews (Необходимость использования параметра Multiviews должна быть описана в ТП/УТП)",
+    "commands": [
+      "grep -r \"Options\" /etc/apache2/*.conf",
+      "grep -r \"Options\" /etc/apache2/conf-available/*.conf"
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nВ каждой публикации должен быть установлен параметр"
+  },
+  {
+    "id": "APC_0023",
+    "sub_id": "4.2",
+    "description": "Стандартные веб страницы поставляемые вместе с сервером удалены/отключены: 1. В директории веб сервера отсутствуют стандартные веб-страницы 2. В браузере отображаются уникальные веб-страницы",
+    "commands": [
+      "grep -r \"error_page\" /etc/apache2/*.conf| grep -v \"#\"",
+      "grep -r \"index.html\" /etc/apache2/*.conf| grep -v \"#\""
+    ],
+    "fix": "Удалить диррективу при наличии в файле /etc/apache2/apache2.conf"
+  },
+  {
+    "id": "APC_0024",
+    "sub_id": "4.3",
+    "description": "Стандартный CGI скрипт удален",
+    "commands": [
+      "find /usr -type f -name \"printenv\""
+    ],
+    "fix": "Удалить диррективу при наличии в файле /etc/apache2/apache2.conf"
+  },
+  {
+    "id": "APC1C_0002",
+    "sub_id": "4.4",
+    "description": "Включение белого списка запросов HTTP (Безопасныеми методами считаются GET, HEAD, OPTIONS. Список методов может быть расширен в ТП/УТП) Для 1С: Безопасныеми методами считаются: GET, PUT, DELETE, PATCH, HEAD.",
+    "commands": [
+      "grep -R -A 4 \"<LimitExcept\" /etc/apache2/*.conf| grep -v \"#\" | grep \"Require\" -C5"
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nВ каждой публикации 1С должен быть установлен параметр, перечень используемых методов предоставляет архитектор решения."
+  },
+  {
+    "id": "APC_0027",
+    "sub_id": "4.5",
+    "description": "Метод HTTP-запроса TRACE отключен",
+    "commands": [
+      "grep -ir \"TraceEnable\" /etc/apache2/*| grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/conf-available/security.conf\nОтключен по умолчанию, при наличии отключить"
+  },
+  {
+    "id": "APC_0029",
+    "sub_id": "4.7",
+    "description": "Доступ к .ht* файлам запрещен",
+    "commands": [
+      "grep -R -A 4 \"<Files.*\\.ht\" /etc/apache2/*.conf| grep -v \"#\" | grep \"Require\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nПрописать диррективу после всех публикаций 1С\n<FilesMatch \"^\\.ht\">\n        Require all denied\n</FilesMatch>"
+  },
+  {
+    "id": "APC_0028",
+    "sub_id": "4.8",
+    "description": "Неиспользуемые проектом расширения должны быть ограничены (Список расширений может варьироваться от особенностей ИС Ограничения должны быть описаны в ТП/УТП)",
+    "commands": [
+      "grep -R -A 4 \"<Files.*^.*$\" /etc/apache2/*.conf| grep -v \"#\" | grep \"Require\"",
+      "grep -R -A 4 \"<FilesMatch\" /etc/apache2/*.conf"
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nПрописать диррективу после всех публикаций 1С, перечень используемых расширений предоставляет архитектор решения"
+  },
+  {
+    "id": "APC_0026",
+    "sub_id": "4.9",
+    "description": "Запросы на основе IP-адреса запрещены",
+    "commands": [
+      "grep -r \"RewriteEngine\" /etc/apache2/*.conf | grep -v \"#\"",
+      "grep -r \"RewriteCond\" /etc/apache2/*.conf | grep -v \"#\"",
+      "grep -r \"RewriteRule\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nПрописать диррективу и правило после всех публикаций 1С"
+  },
+  {
+    "id": "APC_0030",
+    "sub_id": "4.10",
+    "description": "В файле конфигурации веб-сервера для прослушивания указан только порт https - 443",
+    "commands": [
+      "grep -r \"Listen\" /etc/apache2/*.conf| grep -v \"#\""
+    ],
+    "fix": "Удалить или закомментировать Listen 80 в файле /etc/apache2/ports.conf"
+  },
+  {
+    "id": "APC_0031",
+    "sub_id": "4.11",
+    "description": "Заголовок безопасности Content-Security-Policy настроен",
+    "commands": [
+      "grep -r \"Content-Security-Policy\" /etc/apache2/*.conf| grep -v \"#\""
+    ],
+    "fix": "Включить модуль headers:\na2enmod headers\nВ конце каждой публикации добавить заголовок:\nHeader always append Content-Security-Policy \"frame-ancestors 'self';\""
+  },
+  {
+    "id": "APC_0032",
+    "sub_id": "5.1",
+    "description": "Директива LogLevel настроена Значение выставлено в info, notice core:info или debug",
+    "commands": [
+      "grep -r \"LogLevel\" /etc/apache2/*.conf| grep -v \"#\""
+    ],
+    "fix": "Установить значение LogLevel info в /etc/apache2/apache2.conf"
+  },
+  {
+    "id": "APC_0033",
+    "sub_id": "5.2",
+    "description": "ErrorLog отправляется в syslog/rsyslog",
+    "commands": [
+      "grep -E -i \"^\\s*ErrorLog\\s+\\S+\" /etc/apache2/*.conf"
+    ],
+    "fix": ""
+  },
+  {
+    "id": "APC_0034",
+    "sub_id": "5.3",
+    "description": "AccessLog записывается в формате CEF",
+    "commands": [
+      "grep -E -i \"^\\s*LogFormat\\s+\\S+\" /etc/apache2/*.conf"
+    ],
+    "fix": "Прописать в разделе LogFormat файла /etc/apache2/apache2.conf\nLogFormat \"CEF:0|Apache|apache||%>s|%m %U%q|Unknown|end=%{%b %d %Y %H:%M:%S}t app=HTTP cs2=%H suser=%u shost=%h src=%a dhost=%V dpt=%p dproc=apache request=%U requestMethod=%m fname=%f cs1Label=Virtual Host cs1=%v cn1Label=Responce Time cn1=%T out=%B cs4Label=Referer cs4= %{Referer}i dvchost=%v dvc=%A deviceProcessName=apache_access_log requestClientApplication=%{User- Agent}i cs3Label=X-Forwarded-For cs3=%{X-Forwarded-For}i\" cef"
+  },
+  {
+    "id": "APC_0035",
+    "sub_id": "5.4",
+    "description": "Настроена перезапись журнала. Ротацию делать ежедневно и хранить в течении 3 месяцев",
+    "commands": [
+      "logrotate_conf= $(find /etc/logrotate.d -type f -name \"apache2\")\ngrep -r \"rotate\" \"$logrotate_conf\""
+    ],
+    "fix": "Установить значение rotate 90"
+  },
+  {
+    "id": "APC_0036",
+    "sub_id": "6.1",
+    "description": "Соединение осуществляется по протоколу HTTPS с шифрованием SSL/TLS",
+    "commands": [
+      "grep -ir \"SSLEngine\" /etc/apache2/*| grep -v \"#\"",
+      "grep -ir \"SSLCertificateFile\" /etc/apache2/*| grep -v \"#\"",
+      "grep -ir \"SSLCertificateKeyFile\" /etc/apache2/*| grep -v \"#\""
+    ],
+    "fix": "1. Установить значение SSSEngine On\n2,3 Устанавливаем и настраиваем ssl при разворачивании apache2"
+  },
+  {
+    "id": "APC_0037",
+    "sub_id": "6.2",
+    "description": "Приватный ключ от сертификата сервера находится в директории принадлежащей root:root с правами доступа 400",
+    "commands": [
+      "sudo stat -c '%U' /etc/ssl/private",
+      "sudo stat -c '%G' /etc/ssl/private",
+      "sudo stat -c '%a' /etc/ssl/private"
+    ],
+    "fix": "При несоответствии устанавливаем права и владельца\nchmod 400 /etc/ssl/private -R\nchown root:root /etc/ssl/private -R"
+  },
+  {
+    "id": "APC_0038",
+    "sub_id": "6.3",
+    "description": "Отключены уязвимые версии протоколов SSL/TLS и использованы новейшие безопасные версии",
+    "commands": [
+      "grep -ir \"SSLProtocol\" /etc/apache2/*| grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/mods-available/ssl.conf:\nSSLProtocol -all +TLSv1.2 +TLSv1.3"
+  },
+  {
+    "id": "APC_0039",
+    "sub_id": "6.4",
+    "description": "Уязвимые типы шифрований не используются",
+    "commands": [
+      "grep -i \"SSLHonorCipherOrder\" /etc/apache2/*.conf | grep -v \"#\"",
+      "grep -i \"SSLCipherSuite\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значения в /etc/apache2/apache2.conf после правил, перед форматом логов\nSSLHonorCipherOrder On\nSSLCipherSuite ALL:!EXP:!NULL:!ADH:!LOW:!SSLv2:!SSLv3:!MD5:!RC4:!aNULL:!3DES:!IDEA"
+  },
+  {
+    "id": "APC_0040",
+    "sub_id": "6.5",
+    "description": "Директива SSLInsecureRenegotiation отключена",
+    "commands": [
+      "grep -i \"SSLInsecureRenegotiation\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf после правил, перед форматом логов"
+  },
+  {
+    "id": "APC_0041",
+    "sub_id": "6.6",
+    "description": "Директива SSLCompression отключена",
+    "commands": [
+      "grep -i \"SSLCompression\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf после правил, перед форматом логов"
+  },
+  {
+    "id": "APC_0042",
+    "sub_id": "6.7",
+    "description": "Включен HTTP Strict Transport Security (HSTS) с указанием max-age 15678000",
+    "commands": [
+      "grep -E \"^\\s*Header\\s+always\\s+set\\s+Strict-Transport-Security\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/sites-enabled/default-ssl.conf\nHeader always set Strict-Transport-Security \"max-age=15678000; includeSubDomains\""
+  },
+  {
+    "id": "APC_0043",
+    "sub_id": "6.8",
+    "description": "Для директивы ServerTokens установлено значение: prod или ProductOnly",
+    "commands": [
+      "grep -i \"ServerTokens\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf после правил, перед форматом логов\nServerTokens Prod"
+  },
+  {
+    "id": "APC_0044",
+    "sub_id": "6.9",
+    "description": "Директива ServerSignature отключена",
+    "commands": [
+      "grep -i \"ServerSignature\" /etc/apache2/*.conf | grep -v \"#\"",
+      "grep -i \"ServerSignature\" /etc/apache2/conf-available/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf после правил, перед форматом логов\nServerSignature Off"
+  },
+  {
+    "id": "APC_0045",
+    "sub_id": "6.10",
+    "description": "Директива FileETag настроена",
+    "commands": [
+      "grep -i \"FileETag\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение\nFileETag None\nв /etc/apache2/apache2.conf после правил, перед форматом логов"
+  },
+  {
+    "id": "APC1C_0003",
+    "sub_id": "7.1",
+    "description": "Директива Timeout настроена Значение установлено в 20 или меньше",
+    "commands": [
+      "grep -R \"Timeout\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nTimeout 20"
+  },
+  {
+    "id": "APC_0047",
+    "sub_id": "7.2",
+    "description": "Директива KeepAlive настроена",
+    "commands": [
+      "grep -R \"KeepAlive\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nKeepAlive On"
+  },
+  {
+    "id": "APC_0048",
+    "sub_id": "7.3",
+    "description": "Значение MaxKeepAliveRequests установлено в 100 либо больше",
+    "commands": [
+      "grep -R \"MaxKeepAliveRequests\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf"
+  },
+  {
+    "id": "APC_0049",
+    "sub_id": "7.4",
+    "description": "Значение KeepAliveTimeout установлено в 15 либо меньше",
+    "commands": [
+      "grep -R \"KeepAliveTimeout\" /etc/apache2/*.conf | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf\nKeepAliveTimeout 15"
+  },
+  {
+    "id": "APC_0050",
+    "sub_id": "7.5",
+    "description": "Значение RequestReadTimeout установлено в 40 либо меньше",
+    "commands": [
+      "grep -ir \"RequestReadTimeout\" /etc/apache2/* | grep -v \"#\""
+    ],
+    "fix": "Установить значение в /etc/apache2/apache2.conf"
+  },
+  {
+    "id": "APC_0052",
+    "sub_id": "8.2",
+    "description": "Директива LimitRequestFields настроена Значение установлено в 100 или меньше",
+    "commands": [
+      "grep -R \"LimitRequestFields\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nLimitRequestFields 100"
+  },
+  {
+    "id": "APC1C_0004",
+    "sub_id": "8.3",
+    "description": "Директива LimitRequestFieldSize настроена Значение установлено в 49152 или меньше",
+    "commands": [
+      "grep -R \"LimitRequestFieldsize\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nLimitRequestFieldsize 49152"
+  },
+  {
+    "id": "APC_0054",
+    "sub_id": "8.4",
+    "description": "Директива LimitRequestBody настроена Значение установлено в 102400 или меньше (Допускается отклонение от целевого значения при наличии обоснования, зафиксированного в ТП/УТП)",
+    "commands": [
+      "grep -R \"LimitRequestBody\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nLimitRequestBody 102400"
+  },
+  {
+    "id": "APC_0055",
+    "sub_id": "9.1",
+    "description": "Включение и настройка параметра X-Frame-Options со значением SAMEORIGIN",
+    "commands": [
+      "grep -r \"X-Frame-Options\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nHeader always set X-Frame-Options: SAMEORIGIN"
+  },
+  {
+    "id": "APC_0056",
+    "sub_id": "9.2",
+    "description": "Включение и настройка параметра X-Content-Type-Options со значением nosniff",
+    "commands": [
+      "grep -r \"X-Content-Type-Options\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nHeader always set X-Content-Type-Options: nosniff"
+  },
+  {
+    "id": "APC_0057",
+    "sub_id": "9.3",
+    "description": "Включение и настройка параметра X-XSS-Protection со значением 1; mode=block",
+    "commands": [
+      "grep -r \"X-XSS-Protection\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nHeader always set X-XSS-Protection: \"1; mode=block\""
+  },
+  {
+    "id": "APC_0058",
+    "sub_id": "9.4",
+    "description": "Включение и настройка параметра Referrer-Policy с значением no-referrer",
+    "commands": [
+      "grep -r \"Referrer-Policy\" /etc/apache2/*/*.conf | grep -v \"#\""
+    ],
+    "fix": "В файле: /etc/apache2/sites-enabled/default-ssl.conf\nHeader always set Referrer-Policy: no-referrer"
+  }
+]
